@@ -1,22 +1,30 @@
 #!/bin/sh
 #
-# @name IFODRONE
+# @name IfoDrone Airframe
 #
-# @type IFODRONE
+#
+# @type rotorcraft
+# @class Multirotor
+#
+# @output MAIN1 left aileron
+# @output MAIN2 right aileron
+# @output MAIN4 throttle
+#
+# @maintainer Paweł Zawadzki z-essą@gmail.com
 #
 
-. ${R}etc/init.d/rc.vtol_defaults
+. ${R}etc/init.d/rc.mc_defaults
 
 PX4_SIMULATOR=${PX4_SIMULATOR:=gz}
 PX4_GZ_WORLD=${PX4_GZ_WORLD:=default}
-adding own frame to px4 firmwarePX4_SIM_MODEL=${PX4_SIM_MODEL:=tiltrotor}
+PX4_SIM_MODEL=${PX4_SIM_MODEL:=x500}
 
 param set-default SIM_GZ_EN 1
 
 param set-default CA_AIRFRAME 9
 param set-default CA_ROTOR_COUNT 6
 
-# Main motors (+-Z)
+# Main motors
 param set-default CA_ROTOR0_PX 0.0
 param set-default CA_ROTOR0_PY 0.0
 param set-default CA_ROTOR0_PZ 0.1
@@ -27,41 +35,25 @@ param set-default CA_ROTOR1_PY 0.0
 param set-default CA_ROTOR1_PZ -0.1
 param set-default CA_ROTOR1_KM -0.05
 
-# Side motors (tilting)
+# Side motors (tiltig)
 param set-default CA_ROTOR2_TILT 1
 param set-default CA_ROTOR2_PX 0
 param set-default CA_ROTOR2_PY 0.3
 param set-default CA_ROTOR2_KM 0.05
-param set-default CA_SV_TL0_MAXA 135
-param set-default CA_SV_TL0_MINA 45
-param set-default CA_SV_TL0_TD 0
 
 param set-default CA_ROTOR3_TILT 2
 param set-default CA_ROTOR3_PX 0
 param set-default CA_ROTOR3_PY -0.3
 param set-default CA_ROTOR3_KM 0.05
-param set-default CA_SV_TL1_MAXA 135
-param set-default CA_SV_TL1_MINA 45
-param set-default CA_SV_TL1_TD 90
 
 param set-default CA_ROTOR4_TILT 3
 param set-default CA_ROTOR4_PX 0.3
 param set-default CA_ROTOR4_PY 0
 param set-default CA_ROTOR4_KM -0.05
-param set-default CA_SV_TL2_MAXA 135
-param set-default CA_SV_TL2_MINA 45
-param set-default CA_SV_TL2_TD 180
 
 param set-default CA_ROTOR5_TILT 4
 param set-default CA_ROTOR5_PX -0.3
 param set-default CA_ROTOR5_PY 0
 param set-default CA_ROTOR5_KM -0.05
-param set-default CA_SV_TL3_MAXA 135
-param set-default CA_SV_TL3_MINA 45
-param set-default CA_SV_TL3_TD 270
 
-param set-default CA_SV_TL_COUNT 4
 
-param set-default MIS_TAKEOFF_ALT 10
-
-param set-default VT_TYPE 1
