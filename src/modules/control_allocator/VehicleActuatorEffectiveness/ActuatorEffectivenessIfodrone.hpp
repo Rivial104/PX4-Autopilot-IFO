@@ -4,7 +4,7 @@
 #include "control_allocation/actuator_effectiveness/ActuatorEffectiveness.hpp"
 
 #include <uORB/topics/ifodrone_control.h>
-
+#include <uORB/topics/vehicle_attitude_setpoint.h>
 #include <uORB/Subscription.hpp>
 
 #include <vector>
@@ -64,6 +64,10 @@ private:
 	float _main_thrust[2]{0.0f, 0.0f};
 
 	uORB::SubscriptionData<ifodrone_control_s> _ifodrone_control_sub{ORB_ID(ifodrone_control)};
+    	uORB::Subscription _att_sp_sub{ORB_ID(vehicle_attitude_setpoint)};
+
+	float _tilt_kp_pitch{1.0f};
+	float _tilt_kp_roll{1.0f};
 
 	bool _armed{false};
 	uint64_t _armed_time{0};

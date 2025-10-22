@@ -85,6 +85,7 @@ ActuatorEffectivenessTiltrotorVTOL::getEffectivenessMatrix(Configuration &config
 	const bool mc_rotors_added_successfully = _mc_rotors.addActuators(configuration);
 	_motors = _mc_rotors.getMotors();
 
+
 	// Control Surfaces
 	configuration.selected_matrix = 1;
 	_first_control_surface_idx = configuration.num_actuators_matrix[configuration.selected_matrix];
