@@ -19,7 +19,7 @@ param set SYS_AUTOCONFIG 1
 
 param set-default SIM_GZ_EN 1
 
-param set-default CA_AIRFRAME 9
+param set-default CA_AIRFRAME 90
 param set-default CA_ROTOR_COUNT 6
 
 # Main motors

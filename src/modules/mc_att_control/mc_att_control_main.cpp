@@ -199,6 +199,14 @@ MulticopterAttitudeControl::generate_attitude_setpoint(const Quatf &q, float dt)
 
 	attitude_setpoint.timestamp = hrt_absolute_time();
 	_vehicle_attitude_setpoint_pub.publish(attitude_setpoint);
+
+	// ifodrone_control_s ifodrone_control{
+	// 	.timestamp = hrt_absolute_time(),
+	// 	.main_thrust = {attitude_setpoint.thrust_body[2], attitude_setpoint.thrust_body[2]},
+	// 	.side_thrust = {attitude_setpoint.thrust_body[0], attitude_setpoint.thrust_body[1], attitude_setpoint.thrust_body[0], attitude_setpoint.thrust_body[1]},
+	// 	.tilt_angle = {attitude_setpoint.pitch, attitude_setpoint.roll, attitude_setpoint.pitch, attitude_setpoint.roll}
+	// };
+	// _ifodrone_control_pub.publish(ifodrone_control);
 }
 
 void

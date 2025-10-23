@@ -2,13 +2,17 @@
 #pragma once
 
 #include "control_allocation/actuator_effectiveness/ActuatorEffectiveness.hpp"
+#include "ActuatorEffectivenessRotors.hpp"
 
 #include <uORB/topics/ifodrone_control.h>
 #include <uORB/topics/vehicle_attitude_setpoint.h>
+#include <uORB/topics/vehicle_attitude.h>
+#include <uORB/topics/vehicle_status.h>
 #include <uORB/Subscription.hpp>
 
-#include <vector>
+#include <drivers/drv_hrt.h>
 #include <px4_platform_common/module_params.h>
+#include <vector>
 
 class ActuatorEffectivenessIfodrone : public ModuleParams, public ActuatorEffectiveness
 {
@@ -29,7 +33,7 @@ public:
 
 	void getDesiredAllocationMethod(AllocationMethod allocation_method_out[MAX_NUM_MATRICES]) const override
 	{
-		static_assert(MAX_NUM_MATRICES >= 2, "expecting at least 2 matrices");
+		// static_assert(MAX_NUM_MATRICES >= 2, "expecting at least 2 matrices");
 		allocation_method_out[0] = AllocationMethod::SEQUENTIAL_DESATURATION;
 		allocation_method_out[1] = AllocationMethod::PSEUDO_INVERSE;
 	}
@@ -43,35 +47,25 @@ public:
 	const char *name() const override { return "IfoDrone"; }
 
 protected:
-	bool _collective_tilt_updated{true};
+	ActuatorEffectivenessRotors _rotors;
 
-	uint32_t _motors{};
-	uint32_t _untiltable_motors{};
+	float _main_thrust[2]{0.0f, 0.0f};
+	float _side_thrust[4]{0.0f, 0.0f, 0.0f, 0.0f};
+	float _tilts[4]{0.0f, 0.0f, 0.0f, 0.0f};
 
-	int _first_control_surface_idx{0}; ///< applies to matrix 1
-	int _first_tilt_idx{0}; ///< applies to matrix 0
-
-	float _last_collective_tilt_control{NAN};
-
+    	uORB::Subscription _att_sp_sub{ORB_ID(vehicle_attitude_setpoint)};
 
 private:
 
 	void updateParams() override;
 
-	float _tilt[4]{0.0f, 0.0f, 0.0f, 0.0f};
-	float _side_thrust[4]{0.0f, 0.0f, 0.0f, 0.0f};
-
-	float _main_thrust[2]{0.0f, 0.0f};
-
-	uORB::SubscriptionData<ifodrone_control_s> _ifodrone_control_sub{ORB_ID(ifodrone_control)};
-    	uORB::Subscription _att_sp_sub{ORB_ID(vehicle_attitude_setpoint)};
-
 	float _tilt_kp_pitch{1.0f};
 	float _tilt_kp_roll{1.0f};
 
-	bool _armed{false};
-	uint64_t _armed_time{0};
-	float _param_spoolup_time{1.f};
+	float _param_spoolup_time{1.0f};
+
+	uint64_t _debug_timeout_ms{5000};
+	uint64_t _debug_timer{0};
 
 	struct ParamHandles {
 		param_t com_spoolup_time;
@@ -79,9 +73,10 @@ private:
 
 	ParamHandles _param_handles{};
 
-	float _tilt_angles[TILT_MOTORS]{0.0f};
+	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
+	uORB::SubscriptionData<ifodrone_control_s> _ifodrone_control_sub{ORB_ID(ifodrone_control)};
 
 	static constexpr float _min_tilt_angle{math::radians(-45.0f)};
 	static constexpr float _max_tilt_angle{math::radians(45.0f)};
-	static constexpr float _tilt_deadzone{math::radians(2.0f)};
+	static constexpr float _tilt_deadzone{math::radians(1.0f)};
 };

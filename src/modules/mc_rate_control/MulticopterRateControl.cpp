@@ -174,6 +174,14 @@ MulticopterRateControl::Run()
 				vehicle_rates_setpoint.timestamp = hrt_absolute_time();
 
 				_vehicle_rates_setpoint_pub.publish(vehicle_rates_setpoint);
+
+				ifodrone_control_s ifodrone_control{
+					.timestamp = hrt_absolute_time(),
+					.main_thrust = {vehicle_rates_setpoint.thrust_body[2], vehicle_rates_setpoint.thrust_body[2]},
+					.side_thrust = {vehicle_rates_setpoint.thrust_body[0], vehicle_rates_setpoint.thrust_body[1], vehicle_rates_setpoint.thrust_body[0], vehicle_rates_setpoint.thrust_body[1]},
+					.tilt_angle = {vehicle_rates_setpoint.pitch, vehicle_rates_setpoint.roll, vehicle_rates_setpoint.pitch, vehicle_rates_setpoint.roll}
+				};
+				_ifodrone_control_pub.publish(ifodrone_control);
 			}
 
 		} else if (_vehicle_rates_setpoint_sub.update(&vehicle_rates_setpoint)) {
