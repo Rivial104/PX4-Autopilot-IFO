@@ -59,8 +59,26 @@ private:
 
 	void updateParams() override;
 
-	float _tilt_kp_pitch{1.0f};
-	float _tilt_kp_roll{1.0f};
+	const float _tilt_kp_pitch{1.0f};
+	const float _tilt_kp_roll{1.0f};
+
+	const float _ct{20.0f}; // thrust coefficient, T = ct * omega^2
+	const float _cm{1.0f}; // moment coefficient, M = cm * omega^2
+
+	const float _k_side{5.0f};
+	const float _k_torque{0.0f};
+
+	matrix::Vector3f _tilted_axis[TILT_MOTORS];
+
+	matrix::Vector3f _motor_positions[TILT_MOTORS + MAIN_MOTORS] = {
+		matrix::Vector3f( 0.0f, 0.0f, 0.1f),
+		matrix::Vector3f( 0.0f,  0.0f, -0.1f),
+
+		matrix::Vector3f(0.15f,  0.0f, 0.0f),
+		matrix::Vector3f(0.0f,  0.15f, 0.0f),
+		matrix::Vector3f(-0.15f,  0.0f, 0.0f),
+		matrix::Vector3f(0.0f, -0.15f, 0.0f)
+	};
 
 	float _param_spoolup_time{1.0f};
 
@@ -79,4 +97,10 @@ private:
 	static constexpr float _min_tilt_angle{math::radians(-45.0f)};
 	static constexpr float _max_tilt_angle{math::radians(45.0f)};
 	static constexpr float _tilt_deadzone{math::radians(1.0f)};
+
+	// Define basis vectors as static const members. Initialized in the .cpp to avoid
+	// using non-literal types in a constexpr context.
+	static const matrix::Vector3f _ex;
+	static const matrix::Vector3f _ey;
+	static const matrix::Vector3f _ez;
 };

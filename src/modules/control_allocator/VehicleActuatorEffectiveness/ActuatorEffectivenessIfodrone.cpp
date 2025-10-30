@@ -11,6 +11,10 @@ ActuatorEffectivenessIfodrone::ActuatorEffectivenessIfodrone(ModuleParams * pare
 {
 	updateParams();
 }
+// Definitions for static const basis vectors declared in the header.
+const matrix::Vector3f ActuatorEffectivenessIfodrone::_ex = matrix::Vector3f(1.0f, 0.0f, 0.0f);
+const matrix::Vector3f ActuatorEffectivenessIfodrone::_ey = matrix::Vector3f(0.0f, 1.0f, 0.0f);
+const matrix::Vector3f ActuatorEffectivenessIfodrone::_ez = matrix::Vector3f(0.0f, 0.0f, 1.0f);
 
 void ActuatorEffectivenessIfodrone::updateParams()
 {
@@ -27,85 +31,23 @@ bool ActuatorEffectivenessIfodrone::getEffectivenessMatrix(Configuration & confi
 
 	if(_ifodrone_control_sub.update()) {
 		const ifodrone_control_s &ifodrone_control = _ifodrone_control_sub.get();
-		// for (int i = 0; i < 2; i++) {
-		 	// _main_thrust[i] = ifodrone_control.main_thrust[i];
-		// }
+
 		for (int i = 0; i < 4; i++) {
-			// _side_thrust[i] = ifodrone_control.side_thrust[i];
 			_tilts[i] = ifodrone_control.tilt_angle[i];
 			math::constrain(_tilts[i], _min_tilt_angle, _max_tilt_angle);
 		}
 		should_update = true;
 	}
 
-	// vehicle_attitude_setpoint_s att_sp;
-	// vehicle_attitude_s att;
-	// bool have_att_sp{false};
-
-	// if (_att_sp_sub.update(&att_sp)) {
-	// 	have_att_sp = true;
-	// }
-
 	if (!should_update) {
 		return false; // no update needed
 	}
 
-	// Update tilt angles based on attitude setpoint
-	float ct = 4.0f; // thrust coefficient, T = ct * omega^2
-	float cm = 1.0f; // moment coefficient, M = cm * omega^2
-	// float R = 0.15f;  // distance from center to tilt motors
-	auto ex = matrix::Vector3f(1.0f, 0.0f, 0.0f);
-	auto ey = matrix::Vector3f(0.0f, 1.0f, 0.0f);
-	auto ez = matrix::Vector3f(0.0f, 0.0f, 1.0f);
-
-	// // Convert quaternion to Euler angles
-	// Quatf q(att_sp.q_d);
-	// matrix::Eulerf euler(q);
-
-	// if (now - _debug_timer > _debug_timeout_ms * 1000)
-	// {
-	// 	_debug_timer = now;
-	// 	// PX4_DEBUG("Att SP Euler angles: roll %.2f, pitch %.2f, yaw %.2f \n",
-	// 	// 	(double)math::degrees(euler.phi()),
-	// 	// 	(double)math::degrees(euler.theta()),
-	// 	// 	(double)math::degrees(euler.psi()));
-	// }
-
-	// float des_pitch = 0.0f;
-	// float des_roll = 0.0f;
-
-	// if(have_att_sp) {
-	// 	des_pitch = euler.phi();
-	// 	des_roll = euler.theta();
-	// }
-
-	// float theta_des[4];
-	// theta_des[0] = _tilt_kp_pitch * des_pitch; // front tilt
-	// theta_des[1] = _tilt_kp_roll * des_roll;   // right tilt
-	// theta_des[2] = _tilt_kp_pitch * des_pitch; // back tilt
-	// theta_des[3] = _tilt_kp_roll * des_roll;   // left tilt
-
-	// // Saturate desired tilt angles and apply deadzone
-	// // bool tilt_changed = false;
-	// for (int i=0; i<4; i++) {
-	// 	math::constrain(theta_des[i], _min_tilt_angle, _max_tilt_angle);
-	// 	if (fabsf(theta_des[i] - _tilts[i]) > _tilt_deadzone) {
-	// 		// tilt_changed = true;
-	// 		should_update = true;
-
-	// 		// ifodrone_control_s ifodrone_control;
-	// 		// ifodrone_control.tilt[i] = theta_des[i];
-	// 		_tilts[i] = theta_des[i];
-	// 	}
-	// }
-
-	matrix::Vector3f tilted_axis[TILT_MOTORS];
-
 	// Rotate the base 'up' vector (ez) around the specified axis to obtain a tilted thrust axis
-	tilted_axis[0] = matrix::Dcmf(matrix::AxisAnglef(ex, _tilts[0])) * ez; // forward tilt: rotate up around X
-	tilted_axis[1] = matrix::Dcmf(matrix::AxisAnglef(ey, _tilts[1])) * ez; // right tilt: rotate up around Y
-	tilted_axis[2] = matrix::Dcmf(matrix::AxisAnglef(-ex, _tilts[2])) * ez; // backward tilt: rotate up around -X
-	tilted_axis[3] = matrix::Dcmf(matrix::AxisAnglef(-ey, _tilts[3])) * ez; // left tilt: rotate up around -Y
+	_tilted_axis[0] = matrix::Dcmf(matrix::AxisAnglef(_ex, _tilts[0])) * _ez; // forward tilt: rotate up around X
+	_tilted_axis[1] = matrix::Dcmf(matrix::AxisAnglef(_ey, _tilts[1])) * _ez; // right tilt: rotate up around Y
+	_tilted_axis[2] = matrix::Dcmf(matrix::AxisAnglef(-_ex, _tilts[2])) * _ez; // backward tilt: rotate up around -X
+	_tilted_axis[3] = matrix::Dcmf(matrix::AxisAnglef(-_ey, _tilts[3])) * _ez; // left tilt: rotate up around -Y
 
 	// Motors:
 	// 0 - Main up
@@ -114,16 +56,6 @@ bool ActuatorEffectivenessIfodrone::getEffectivenessMatrix(Configuration & confi
 	// 3- right tilt
 	// 4 - backward tilt
 	// 5 - left tilt
-
-	matrix::Vector3f motor_positions[TILT_MOTORS + MAIN_MOTORS] = {
-		matrix::Vector3f( 0.0f, 0.0f, 0.1f),
-		matrix::Vector3f( 0.0f,  0.0f, -0.1f),
-
-		matrix::Vector3f(0.15f,  0.0f, 0.0f),
-		matrix::Vector3f(0.0f,  0.15f, 0.0f),
-		matrix::Vector3f(-0.15f,  0.0f, 0.0f),
-		matrix::Vector3f(0.0f, -0.15f, 0.0f)
-	};
 
 	// Motors:
 	auto &effectiveness_matrix = configuration.effectiveness_matrices[configuration.selected_matrix];
@@ -136,26 +68,21 @@ bool ActuatorEffectivenessIfodrone::getEffectivenessMatrix(Configuration & confi
 		// float thrust_scale{1.0f};
 
 		if(j < MAIN_MOTORS) {
-			thrust_axis = (j == 0) ? ez : ez; // main motors use up_axis
+			thrust_axis = _ez;
 			// thrust_scale = _main_thrust[j];
 		} else {
 			unsigned side_idx = j - MAIN_MOTORS;
-			thrust_axis = tilted_axis[side_idx];
+			thrust_axis = _tilted_axis[side_idx];
 			// thrust_scale = _side_thrust[side_idx];
 		}
 
-		matrix::Vector3f force = ct * thrust_axis;
-		matrix::Vector3f moment = ct * motor_positions[j].cross(thrust_axis) - cm*thrust_axis;
+		matrix::Vector3f force = _ct * thrust_axis;
+		matrix::Vector3f moment = _ct * _motor_positions[j].cross(thrust_axis) - _cm * thrust_axis;
 
 		effectiveness_matrix.slice<3, 1>(0, j) = moment;
 		effectiveness_matrix.slice<3, 1>(3, j) = force;
 	}
 	configuration.actuatorsAdded(ActuatorType::MOTORS, motor_count);
-
-	// _rotors.enableYawByDifferentialThrust(true);
-	// _rotors.enableThreeDimensionalThrust(true);
-	// const bool rotors_added_successfully = _rotors.addActuators(configuration);
-	// _ifo_rotors = _rotors.getMotors();
 
 
 	// Allocation of servos:
@@ -166,18 +93,18 @@ bool ActuatorEffectivenessIfodrone::getEffectivenessMatrix(Configuration & confi
 		unsigned col = servo_start_idx + s; // column index for this actuator in the effectiveness matrix
 		matrix::Vector3f axis_of_rotation;
 
-		if (s == 0) { axis_of_rotation = ex; }      	// front tilt
-		else if (s == 1) { axis_of_rotation = ey; } 	// right tilt
-		else if (s == 2) { axis_of_rotation = -ex; } 	// back tilt
-		else { axis_of_rotation = -ey; } 		// left tilt
+		if (s == 0) { axis_of_rotation = _ex; }      	// front tilt
+		else if (s == 1) { axis_of_rotation = _ey; } 	// right tilt
+		else if (s == 2) { axis_of_rotation = -_ex; } 	// back tilt
+		else { axis_of_rotation = -_ey; } 		// left tilt
 
 		unsigned associated_motor_tilt = MAIN_MOTORS + s;
 
-		matrix::Vector3f d_axis_d_theta = axis_of_rotation.cross(tilted_axis[s]);
+		matrix::Vector3f d_axis_d_theta = axis_of_rotation.cross(_tilted_axis[s]);
 
 		// float side_thrust_scale = _side_thrust[s];
 
-		effectiveness_matrix.slice<3, 1>(0, col) = motor_positions[associated_motor_tilt].cross( d_axis_d_theta);
+		effectiveness_matrix.slice<3, 1>(0, col) = _motor_positions[associated_motor_tilt].cross(d_axis_d_theta);
 		effectiveness_matrix.slice<3, 1>(3, col) = matrix::Vector3f(0.0f, 0.0f, 0.0f); // Servo produces no direct thrust
 	}
 
@@ -190,12 +117,12 @@ void ActuatorEffectivenessIfodrone::updateSetpoint(const matrix::Vector<float,NU
 {
 	const uint64_t now = hrt_absolute_time();
 
-	const float Mx = control_sp(3);
-	const float My = control_sp(4);
-	const float Mz = control_sp(5);
-	const float Fx = control_sp(0);
-	const float Fy = control_sp(1);
-	const float Fz = control_sp(2);
+	const float Mx = control_sp(0);
+	const float My = control_sp(1);
+	const float Mz = control_sp(2);
+	const float Fx = control_sp(3);
+	const float Fy = control_sp(4);
+	const float Fz = control_sp(5);
 
 	const unsigned motor_count = MAIN_MOTORS + TILT_MOTORS; // 6
     	const unsigned servo_start = motor_count;               // 6
@@ -207,20 +134,14 @@ void ActuatorEffectivenessIfodrone::updateSetpoint(const matrix::Vector<float,NU
 	}
 
 	// MAIN ENGINES //
-	float ct = 100.0f; // thrust coefficient, T = ct * omega^2
-	// float cm = 1.0f; // moment coefficient, M = cm * omega^2
 
-	float main0 = -ct*Fz;
-	float main1 = -ct*Fz;
+	float main0 = _ct * Fz;
+	float main1 = _ct * Fz;
 
-	const float k_side = 50.0f;
-	const float k_torque = 0.0f;
-
-
-	float u2 =  k_side * (Fx * 0.5f) + k_torque * (My * 0.25f) + 0.0f * Mz;
-	float u4 =  k_side * ( - Fx * 0.5f) + k_torque * (My * 0.25f) + 0.0f * Mz;
-	float u3 =  k_side * ( + Fy * 0.5f) + k_torque * (Mx * 0.25f) + 0.0f * Mz;
-	float u5 =  k_side * ( -Fy * 0.5f) + k_torque * (Mx * 0.25f) + 0.0f * Mz;
+	float u2 =  _k_side * (Fx * 0.5f) + _k_torque * (My * 0.25f) + 0.0f * Mz;
+	float u4 =  _k_side * ( - Fx * 0.5f) + _k_torque * (My * 0.25f) + 0.0f * Mz;
+	float u3 =  _k_side * ( + Fy * 0.5f) + _k_torque * (Mx * 0.25f) + 0.0f * Mz;
+	float u5 =  _k_side * ( -Fy * 0.5f) + _k_torque * (Mx * 0.25f) + 0.0f * Mz;
 
 	matrix::Vector<float,6> u_mot;
 	u_mot(0) = main0;
