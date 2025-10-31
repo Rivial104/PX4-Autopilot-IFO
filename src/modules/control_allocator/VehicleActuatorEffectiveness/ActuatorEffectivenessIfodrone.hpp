@@ -16,8 +16,7 @@
 
 class ActuatorEffectivenessIfodrone : public ModuleParams, public ActuatorEffectiveness
 {
-	static constexpr uint8_t TILT_MOTORS{4};
-	static constexpr uint8_t MAIN_MOTORS{2};
+	static constexpr uint8_t MOTORS{6};
 
 public:
 
